@@ -1,65 +1,68 @@
 const db = require("../config/database");
+const config = require("../config/env");
+const { hashPassword } = require("../utils/userUtils");
+const USER = require("../queries/userQueries");
 
 class User {
   static async createTable() {
     try {
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS users (
-          user_id INT AUTO_INCREMENT PRIMARY KEY,
-          first_name VARCHAR(50) NOT NULL,
-          last_name VARCHAR(50),
-          username VARCHAR(50) NOT NULL UNIQUE,
-          email VARCHAR(100) NOT NULL UNIQUE,
-          password VARCHAR(255) NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        )
-      `);
+      await db.execute(USER.CREATE_TABLE);
     } catch (error) {
       console.error("Error creating users table:", error);
       throw error;
     }
   }
 
+  static async initializeAdmin() {
+    try {
+      const hashedPassword = await hashPassword(config.ADMIN_PASSWORD);
+      const [result] = await db.execute(
+        USER.CREATE_ADMIN,
+        [config.ADMIN_FIRST_NAME, config.ADMIN_LAST_NAME, config.ADMIN_USERNAME, config.ADMIN_EMAIL, hashedPassword, "admin"]
+      );  
+    } catch (error) {
+      console.error("Error initializing admin user:", error);
+      throw error;
+    }
+  }
+  
   static async create({ firstName, lastName, username, email, password }) {
     const [result] = await db.execute(
-      "INSERT INTO users (first_name, last_name, username, email, password) VALUES (?, ?, ?, ?, ?)",
+      USER.CREATE_USER,
       [firstName, lastName || null, username, email, password]
     );
     return result.insertId;
   }
 
   static async find() {
-    const [rows] = await db.execute("SELECT * FROM users");
+    const [rows] = await db.execute(USER.FIND_ALL_USERS);
     return rows;
   }
 
   static async findByUsername(username) {
-    const [rows] = await db.execute("SELECT * FROM users WHERE username = ?", [username]);
+    const [rows] = await db.execute(USER.FIND_BY_USERNAME, [username]);
     return rows[0];
   }
 
   static async findByEmail(email) {
-    const [rows] = await db.execute("SELECT * FROM users WHERE email = ?", [email]);
+    const [rows] = await db.execute(USER.FIND_BY_EMAIL, [email]);
     return rows[0];
   }
 
   static async findById(userId) {
-    const [rows] = await db.execute("SELECT * FROM users WHERE user_id = ?", [
-      userId,
-    ]);
+    const [rows] = await db.execute(USER.FIND_BY_ID, [userId]);
     return rows[0];
   }
 
   static async update(userId, { firstName, lastName, username, email, password }) {
     await db.execute(
-      "UPDATE users SET first_name = ?, last_name = ?, username = ?, email = ?, password = ? WHERE user_id = ?",
+      USER.UPDATE_USER,
       [firstName, lastName, username, email, password, userId]
     );
   }
 
   static async delete(userId) {
-    await db.execute("DELETE FROM users WHERE user_id = ?", [userId]);
+    await db.execute(USER.DELETE_USER, [userId]);
   }
 }
 

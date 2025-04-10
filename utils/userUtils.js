@@ -1,6 +1,5 @@
 const bcrypt = require('bcrypt');
 
-// Validation helpers
 const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -15,8 +14,19 @@ const hashPassword = async (password) => {
     return await bcrypt.hash(password, salt);
 };
 
+const sanitizeUser = (user) => {
+    const { password, ...sanitizedUser } = user;
+    return sanitizedUser;
+};
+
+const sanitizeUsers = (users) => {
+    return users.map(user => sanitizeUser(user));
+};
+
 module.exports = {
     validateEmail,
     validatePassword,
     hashPassword,
+    sanitizeUser,
+    sanitizeUsers
 };

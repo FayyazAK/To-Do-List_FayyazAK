@@ -11,6 +11,9 @@ async function initializeDatabase() {
     await List.createTable();
     await Task.createTable();
 
+    // Initialize admin user
+    await User.initializeAdmin();
+
     // Initialize priority levels
     await Priority.initializePriorities();
 
